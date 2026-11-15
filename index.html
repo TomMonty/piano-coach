@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e1014">
+<title>Piano Coach</title>
+<style>
+:root{--bg:#0e1014;--panel:#171a21;--panel2:#1e222c;--line:#2b303c;--text:#eceef3;--muted:#8d94a6;--accent:#6b8cff;--right:#6b8cff;--left:#ffab52;--bad:#ff5f5f;--good:#45e08c;--gold:#ffd166}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.hidden{display:none!important}
+button,select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:11px;height:42px;padding:0 13px;cursor:pointer}
+button:active{transform:scale(.97)}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650}
+.icon{width:44px;padding:0;font-size:18px;flex:none}
+.pill{display:flex;align-items:center;gap:8px;border-radius:22px;max-width:260px}
+.pill span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bad);flex:none}
+.pill.ok .dot{background:var(--good);box-shadow:0 0 8px var(--good)}
+.screen{height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+
+/* ---------- Accueil ---------- */
+#home{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 20px 60px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.top h1{font-size:28px;margin:0;letter-spacing:-.5px;flex:1}
+.top h1 small{display:block;font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:2px}
+h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+h2.sec .bar{flex:1;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;max-width:220px}
+h2.sec .bar i{display:block;height:100%;background:var(--good);border-radius:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.item{position:relative;display:flex;gap:12px;align-items:flex-start;text-align:left;height:auto;padding:14px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.item .num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted)}
+.item.done .num{background:var(--good);color:#06240f}
+.item.next{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.item.next .num{background:var(--accent);color:#fff}
+.item b{display:block;font-size:16px;margin-bottom:2px}
+.item span.d{color:var(--muted);font-size:13px;line-height:1.35;display:block}
+.item .stars{color:var(--gold);font-size:13px;letter-spacing:2px;margin-top:5px;display:block}
+.item .del{position:absolute;top:6px;right:6px;width:30px;height:30px;padding:0;border-radius:50%;font-size:13px;color:var(--muted);background:transparent;border:0}
+
+/* ---------- Lecteur ---------- */
+#player{display:flex;flex-direction:column}
+#bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+#title{font-weight:650;font-size:16px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;flex:none}
+.seg button{border:0;border-radius:0;background:var(--panel2);height:40px;padding:0 11px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:#353c4f;color:#fff;font-weight:650}
+.hand.R.on{background:var(--right);color:#fff}
+.hand.L.on{background:var(--left);color:#221300}
+.speed{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.speed input{width:84px;accent-color:var(--accent)}
+.speed b{color:var(--text);min-width:40px;font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+#stats{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;white-space:nowrap}
+#stats b{color:var(--text)}
+#progress{height:8px;background:#1a1d25;cursor:pointer}
+#progFill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#a585ff)}
+#stage{flex:1;position:relative;min-height:0;background:linear-gradient(#0b0d11,#141821)}
+#roll{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:22px;background:rgba(0,0,0,.72);font-size:19px;font-weight:650;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+#hint:empty{display:none}
+#hint.big{font-size:54px;padding:14px 34px;top:50%;transform:translate(-50%,-50%);border-radius:28px}
+#hint .f{display:inline-flex;width:26px;height:26px;border-radius:50%;background:#fff;color:#111;align-items:center;justify-content:center;font-size:15px;margin-left:4px;vertical-align:2px}
+#hint .err{color:#ffb3b3}
+#kb{width:100%;height:clamp(130px,28vh,240px);display:block;touch-action:none;flex:none}
+#player.free .ctl{display:none}
+
+/* ---------- Fenêtres ---------- */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:10;padding:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px;max-width:540px;width:100%;max-height:90vh;overflow:auto}
+.card h2{margin:0 0 10px;font-size:23px;letter-spacing:-.3px}
+.card p,.card li{color:#cdd1dc;line-height:1.55;font-size:16px}
+.card ol,.card ul{padding-left:22px}
+.card .big{font-size:52px;font-weight:750;margin:4px 0;letter-spacing:-1px}
+.card .starsBig{font-size:30px;color:var(--gold);letter-spacing:6px}
+.card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.card .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.card .opt small{display:block;color:var(--muted)}
+.card .tog.on{background:var(--good);border-color:var(--good);color:#06240f;font-weight:650}
+.muted{color:var(--muted)!important;font-size:13.5px!important}
+.tip{background:var(--panel2);border-radius:12px;padding:10px 14px;margin:12px 0}
+.fing{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.fing span{display:flex;align-items:center;gap:6px;background:var(--panel2);border-radius:20px;padding:4px 12px 4px 4px;font-size:14px}
+.fing i{display:inline-flex;width:24px;height:24px;border-radius:50%;background:#fff;color:#111;align-items:center;justify-content:center;font-style:normal;font-weight:700}
+.cR{color:var(--right);font-weight:650}.cL{color:var(--left);font-weight:650}
+</style>
+</head>
+<body>
+
+<!-- ============ ACCUEIL ============ -->
+<div id="home" class="screen">
+  <div class="wrap">
+    <div class="top">
+      <h1>Piano Coach<small>Apprendre le piano en partant de zéro, sans partition</small></h1>
+      <button class="pill statusBtn"><span class="dot"></span><span class="statusTxt">Recherche du piano…</span></button>
+    </div>
+    <h2 class="sec">Parcours débutant <span class="bar"><i id="pathBar"></i></span> <span id="pathTxt"></span></h2>
+    <div class="grid" id="lessons"></div>
+    <h2 class="sec">Pour s'amuser</h2>
+    <div class="grid" id="extras"></div>
+    <h2 class="sec">Mes morceaux (fichiers MIDI)</h2>
+    <div class="grid" id="mine"></div>
+    <input type="file" id="fileIn" style="position:absolute;left:-9999px;opacity:0">
+  </div>
+</div>
+
+<!-- ============ LECTEUR ============ -->
+<div id="player" class="screen hidden">
+  <div id="bar">
+    <button id="backBtn" class="icon" title="Retour">←</button>
+    <button id="playBtn" class="primary icon ctl" title="Lecture">▶</button>
+    <button id="restartBtn" class="icon ctl" title="Recommencer">⏮</button>
+    <div id="title"></div>
+    <div class="seg ctl" id="modeSeg">
+      <button data-mode="wait">Attente</button>
+      <button data-mode="play">Tempo réel</button>
+      <button data-mode="listen">Écoute</button>
+    </div>
+    <div class="seg ctl">
+      <button id="handL" class="hand L" title="Main gauche">MG</button>
+      <button id="handR" class="hand R" title="Main droite">MD</button>
+    </div>
+    <div class="speed ctl"><span>Vitesse</span><input type="range" id="speed" min="25" max="150" step="5"><b id="speedVal">100%</b></div>
+    <div class="spacer"></div>
+    <div id="stats" class="ctl"></div>
+    <button id="infoBtn" class="icon ctl" title="Consignes">?</button>
+    <button id="setBtn" class="icon" title="Réglages">⚙</button>
+  </div>
+  <div id="progress" class="ctl"><div id="progFill"></div></div>
+  <main id="stage"><canvas id="roll"></canvas><div id="hint"></div></main>
+  <canvas id="kb"></canvas>
+</div>
+
+<div id="modal" class="modal hidden"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const NAMES = ['Do','Do#','Ré','Ré#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+const isBlack = m => [1,3,6,8,10].includes(m % 12);
+const noteName = m => NAMES[m % 12];
+const C = {right:'#6b8cff', left:'#ffab52', auto:'#7d8597', good:'#45e08c', bad:'#ff5f5f', free:'#b693ff'};
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('pc_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('pc_' + k, JSON.stringify(v)); }catch(e){} }
+};
+function lowerBound(arr, x, key){ let lo = 0, hi = arr.length; while(lo < hi){ const mid = (lo + hi) >> 1; if(key(arr[mid]) < x) lo = mid + 1; else hi = mid; } return lo; }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const starsOf = p => p >= 95 ? 3 : p >= 80 ? 2 : p >= 60 ? 1 : 0;
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+
+/* ================= Construction des morceaux ================= */
+function finalizeSong(name, notes){
+  notes.sort((a, b) => a.start - b.start || a.midi - b.midi);
+  const off = notes.length ? notes[0].start : 0;
+  let maxDur = 0, lo = 127, hi = 0, end = 0;
+  notes.forEach(n => {
+    n.start -= off;
+    maxDur = Math.max(maxDur, n.dur); lo = Math.min(lo, n.midi); hi = Math.max(hi, n.midi); end = Math.max(end, n.start + n.dur);
+  });
+  return {name, notes, maxDur, lo, hi, duration: end};
+}
+// seq : [note ou [notes], durée en temps, doigt ou [doigts]]
+function build(name, bpm, parts){
+  const spb = 60 / bpm, notes = [];
+  for(const p of parts){
+    let b = p.start || 0;
+    for(const [m, beats, f] of p.seq){
+      const ms = m == null ? [] : Array.isArray(m) ? m : [m];
+      ms.forEach((x, i) => notes.push({midi: x, start: b * spb, dur: beats * spb * 0.9, hand: p.hand, finger: Array.isArray(f) ? f[i] : f}));
+      b += beats;
+    }
+  }
+  return finalizeSong(name, notes);
+}
+const rep = (a, n = 2) => Array.from({length: n}, () => a).flat();
+const FR = {60:1, 62:2, 64:3, 65:4, 67:5};             // main droite, pouce sur Do
+const fr = seq => seq.map(([m, b]) => [m, b, FR[m]]);
+const UP_R = [[60,1],[62,1],[64,1],[65,1],[67,1]], DOWN_R = [[65,1],[64,1],[62,1],[60,2]];
+const UP_L = [[48,1,5],[50,1,4],[52,1,3],[53,1,2],[55,1,1]], DOWN_L = [[53,1,2],[52,1,3],[50,1,4],[48,2,5]];
+const CLAIR = [[60,1],[60,1],[60,1],[62,1],[64,2],[62,2],[60,1],[64,1],[62,1],[62,1],[60,4]];
+const TABAC_A = [[60,1],[62,1],[64,1],[60,1],[62,2],[62,1],[64,1],[65,2]];
+const TABAC = [...TABAC_A,[65,2],[64,2],[64,2],...TABAC_A,[67,2],[60,4]];
+const ODE_A = [[64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],[60,1],[60,1],[62,1],[64,1]];
+const ODE_R = [...ODE_A,[64,1.5],[62,.5],[62,2],...ODE_A,[62,1.5],[60,.5],[60,2]];
+const ODE_L = [[48,4,5],[55,4,1],[48,4,5],[55,4,1],[48,4,5],[55,4,1],[48,4,5],[55,2,1],[48,2,5]];
+const FINGERS_HTML = `<div class="fing"><span><i>1</i>pouce</span><span><i>2</i>index</span><span><i>3</i>majeur</span><span><i>4</i>annulaire</span><span><i>5</i>petit doigt</span></div>`;
+
+const LESSONS = [
+  {id:'L1', name:'Trouver le Do', desc:'Se repérer sur le clavier grâce aux touches noires',
+   intro:`<p>Regarde les touches noires : elles vont par groupes de <b>2</b> et de <b>3</b>.</p>
+     <p>Le <b>Do</b> est la touche blanche juste <b>à gauche d'un groupe de 2 noires</b>. Il y en a plusieurs sur le clavier : celui du milieu s'appelle le <b>Do central</b> (à l'écran, il a un petit point bleu).</p>
+     <div class="tip">À l'écran, la touche à jouer s'allume. Appuie dessus sur ton piano avec l'index, le morceau t'attend.</div>`,
+   make:n => build(n, 60, [{hand:'R', seq:[[60,2,2],[60,2,2],[72,2,2],[60,2,2]]}, {hand:'L', start:8, seq:[[48,2,2],[48,2,2]]}, {hand:'R', start:12, seq:[[60,2,2],[72,4,2]]}])},
+  {id:'L2', name:'Les 5 doigts – main droite', desc:'Do Ré Mi Fa Sol, un doigt par touche',
+   intro:`<p>Chaque doigt a un numéro, affiché dans un rond blanc sur les notes :</p>${FINGERS_HTML}
+     <p>Pose ton <b>pouce droit sur le Do central</b>, puis un doigt par touche blanche. Ta main ne bouge plus : seuls les doigts jouent.</p>
+     <div class="tip">Garde les doigts arrondis, comme si tu tenais une balle.</div>`,
+   make:n => build(n, 70, [{hand:'R', seq:fr([...UP_R,...DOWN_R,...UP_R,...DOWN_R])}])},
+  {id:'L3', name:'Sauter des notes', desc:'Passer d\'un doigt à un autre sans regarder',
+   intro:`<p>Même position (pouce droit sur le Do central), mais cette fois les notes ne se suivent plus : il faut <b>sauter une touche</b>.</p>
+     <p>Fie-toi aux numéros de doigts : si c'est le <b>3</b>, c'est le majeur, où qu'il soit.</p>`,
+   make:n => build(n, 70, [{hand:'R', seq:fr([[60,1],[64,1],[62,1],[65,1],[64,1],[67,1],[65,1],[62,1],[60,2],[60,1],[64,1],[67,1],[64,1],[60,2]])}])},
+  {id:'L4', name:'Au clair de la lune', desc:'Ton premier morceau, avec 3 doigts',
+   intro:`<p>Premier vrai morceau ! Il n'utilise que <b>Do, Ré et Mi</b> : pouce, index, majeur de la main droite.</p>
+     <p>Les barres longues sont des notes à <b>tenir plus longtemps</b> : reste appuyé jusqu'à ce que la barre soit passée.</p>`,
+   make:n => build(n, 90, [{hand:'R', seq:fr(rep(CLAIR))}])},
+  {id:'L5', name:'J\'ai du bon tabac', desc:'Un morceau avec les 5 doigts',
+   intro:`<p>Toujours la même position, pouce droit sur le Do central. Cette fois les cinq doigts travaillent.</p>
+     <div class="tip">Si c'est trop rapide plus tard en « Tempo réel », baisse la vitesse avec le curseur en haut.</div>`,
+   make:n => build(n, 100, [{hand:'R', seq:fr(TABAC)}])},
+  {id:'L6', name:'Ode à la joie', desc:'Beethoven, main droite seule',
+   intro:`<p>Le thème le plus connu de Beethoven tient dans la position des 5 doigts. Tu commences avec le <b>majeur (3) sur Mi</b>.</p>
+     <p>Une fois à l'aise en mode <b>Attente</b>, essaie le mode <b>Tempo réel</b> à 60 % : le morceau avance tout seul et tu dois suivre.</p>`,
+   make:n => build(n, 100, [{hand:'R', seq:fr(ODE_R)}])},
+  {id:'L7', name:'Les 5 doigts – main gauche', desc:'La main gauche, en orange',
+   intro:`<p>Au tour de la main gauche, affichée en <span class="cL">orange</span>. Les numéros sont les mêmes (1 = pouce), mais en miroir.</p>
+     <p>Pose ton <b>petit doigt gauche (5) sur le Do</b> situé à gauche du Do central, puis un doigt par touche. Ton pouce arrive sur le Sol.</p>`,
+   make:n => build(n, 70, [{hand:'L', seq:[...UP_L,...DOWN_L,...UP_L,...DOWN_L]}])},
+  {id:'L8', name:'Les deux mains ensemble', desc:'Jouer la même chose des deux mains',
+   intro:`<p>Les deux mains jouent en même temps : <span class="cR">droite en bleu</span>, <span class="cL">gauche en orange</span>.</p>
+     <p>Pouce droit sur le Do central, petit doigt gauche sur le Do d'en dessous. Le morceau attend que <b>les deux touches</b> soient jouées.</p>
+     <div class="tip">Astuce : les boutons <b>MG</b> et <b>MD</b> en haut permettent de travailler une main à la fois. Le piano joue l'autre à ta place.</div>`,
+   make:n => build(n, 60, [{hand:'R', seq:fr([...UP_R,...DOWN_R,...UP_R,...DOWN_R])}, {hand:'L', seq:[...UP_L,...DOWN_L,...UP_L,...DOWN_L]}])},
+  {id:'L9', name:'Ode à la joie – deux mains', desc:'La mélodie à droite, des notes tenues à gauche',
+   intro:`<p>Main droite : la mélodie que tu connais déjà. Main gauche : seulement deux notes longues, <b>Do (5)</b> et <b>Sol (1)</b>, à tenir pendant que la droite joue.</p>
+     <div class="tip">Commence par la main gauche seule (désactive MD), puis remets les deux.</div>`,
+   make:n => build(n, 90, [{hand:'R', seq:fr(ODE_R)}, {hand:'L', seq:ODE_L}])},
+  {id:'L10', name:'Premier accord', desc:'Do majeur : trois notes à la fois',
+   intro:`<p>Un <b>accord</b>, ce sont plusieurs notes jouées en même temps. Le plus célèbre : <b>Do majeur = Do + Mi + Sol</b>, avec les doigts 1, 3 et 5.</p>
+     <p>Tu joues d'abord les trois notes l'une après l'autre, puis ensemble. À la fin, la main gauche ajoute un Do grave.</p>`,
+   make:n => build(n, 70, [{hand:'R', seq:[[60,1,1],[64,1,3],[67,2,5],[60,1,1],[64,1,3],[67,2,5],...rep([[[60,64,67],2,[1,3,5]]],4)]}, {hand:'L', start:12, seq:[[48,2,5],[48,2,5]]}])},
+  {id:'L11', name:'La gamme de Do', desc:'8 notes avec 5 doigts : le passage du pouce',
+   intro:`<p>Pour monter les 8 notes de la gamme avec seulement 5 doigts, il y a une astuce : après le majeur (3) sur Mi, le <b>pouce passe en dessous</b> pour jouer le Fa.</p>
+     <p>Montée : <b>1 2 3</b> puis <b>1 2 3 4 5</b>. En descendant, c'est le majeur qui passe <b>par-dessus</b> le pouce.</p>
+     <div class="tip">C'est le geste technique le plus important du piano. Va lentement.</div>`,
+   make:n => build(n, 66, [{hand:'R', seq:[[60,1,1],[62,1,2],[64,1,3],[65,1,1],[67,1,2],[69,1,3],[71,1,4],[72,2,5],[71,1,4],[69,1,3],[67,1,2],[65,1,1],[64,1,3],[62,1,2],[60,2,1]]}])},
+];
+const EXTRAS = [
+  {id:'free', name:'Clavier libre', desc:'Appuie sur une touche pour voir son nom', free:true},
+  {id:'frere', name:'Frère Jacques', desc:'Sans doigtés : à toi de te débrouiller',
+   make:n => build(n, 100, [{hand:'R', seq:[...rep([[60,1],[62,1],[64,1],[60,1]]), ...rep([[64,1],[65,1],[67,2]]), ...rep([[67,.5],[69,.5],[67,.5],[65,.5],[64,1],[60,1]]), ...rep([[60,1],[55,1],[60,2]])]}])},
+];
+
+/* ================= Lecture des fichiers MIDI ================= */
+function parseMidi(buf, name){
+  const d = new DataView(buf); let p = 0;
+  const u8 = () => d.getUint8(p++);
+  const u16 = () => { const v = d.getUint16(p); p += 2; return v; };
+  const u32 = () => { const v = d.getUint32(p); p += 4; return v; };
+  const str = n => { let s = ''; for(let i = 0; i < n; i++) s += String.fromCharCode(d.getUint8(p + i)); p += n; return s; };
+  const vlq = () => { let v = 0, b; do{ b = u8(); v = (v << 7) | (b & 0x7f); }while(b & 0x80); return v; };
+  if(d.byteLength < 14 || str(4) !== 'MThd') throw new Error("Ce fichier n'est pas un fichier MIDI (.mid).");
+  const hl = u32(); u16(); const ntrks = u16(), div = u16(); p += hl - 6;
+  const tpq = div; let tps = 0;
+  if(div & 0x8000){ const fps = 256 - (div >> 8); tps = fps * (div & 0xff); }
+  const tempos = [], tracks = [];
+  for(let t = 0; t < ntrks && p + 8 <= d.byteLength; t++){
+    const id = str(4), len = u32(), end = Math.min(p + len, d.byteLength);
+    if(id !== 'MTrk'){ p = end; continue; }
+    let tick = 0, status = 0; const open = {}, notes = [];
+    while(p < end){
+      tick += vlq();
+      const b = d.getUint8(p);
+      if(b & 0x80){ status = b; p++; }
+      else if(!status){ p++; continue; }
+      if(status === 0xFF){
+        const type = u8(), l = vlq();
+        if(type === 0x51 && l === 3) tempos.push({tick, us: (d.getUint8(p) << 16) | (d.getUint8(p+1) << 8) | d.getUint8(p+2)});
+        p += l; status = 0; continue;
+      }
+      if(status === 0xF0 || status === 0xF7){ p += vlq(); status = 0; continue; }
+      const type = status & 0xF0, ch = status & 0x0F;
+      if(type === 0xC0 || type === 0xD0){ p += 1; continue; }
+      const a = u8(), v = u8();
+      if(ch === 9) continue; // batterie
+      const k = ch * 128 + a;
+      if(type === 0x90 && v > 0){ (open[k] = open[k] || []).push(tick); }
+      else if(type === 0x80 || type === 0x90){ const arr = open[k]; if(arr && arr.length) notes.push({midi: a, t0: arr.shift(), t1: tick}); }
+    }
+    for(const k in open) for(const t0 of open[k]) notes.push({midi: k % 128, t0, t1: tick});
+    p = end;
+    if(notes.length) tracks.push(notes);
+  }
+  if(!tracks.length) throw new Error('Aucune note trouvée dans ce fichier.');
+  tempos.sort((a, b) => a.tick - b.tick);
+  const map = [{tick: 0, sec: 0, us: 500000}];
+  for(const tm of tempos){
+    const L = map[map.length - 1];
+    if(tm.tick === L.tick){ L.us = tm.us; continue; }
+    map.push({tick: tm.tick, sec: L.sec + (tm.tick - L.tick) * L.us / 1e6 / tpq, us: tm.us});
+  }
+  const toSec = tk => {
+    if(tps) return tk / tps;
+    const m = map[Math.max(0, lowerBound(map, tk + 1, x => x.tick) - 1)];
+    return m.sec + (tk - m.tick) * m.us / 1e6 / tpq;
+  };
+  const avg = tr => tr.reduce((s, n) => s + n.midi, 0) / tr.length;
+  const rightIdx = tracks.length === 2 ? (avg(tracks[0]) >= avg(tracks[1]) ? 0 : 1) : -1;
+  const all = [];
+  tracks.forEach((tr, i) => tr.forEach(n => {
+    if(n.midi < 21 || n.midi > 108) return;
+    const start = toSec(n.t0);
+    all.push({midi: n.midi, start, dur: Math.max(0.06, toSec(n.t1) - start),
+      hand: rightIdx >= 0 ? (i === rightIdx ? 'R' : 'L') : (n.midi >= 60 ? 'R' : 'L')});
+  }));
+  if(!all.length) throw new Error('Aucune note jouable trouvée dans ce fichier.');
+  return finalizeSong(name, all);
+}
+const toB64 = buf => { const u = new Uint8Array(buf); let s = ''; for(let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+const fromB64 = b => { const s = atob(b), u = new Uint8Array(s.length); for(let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; };
+
+/* ================= Son : le piano via MIDI, sinon petit synthé ================= */
+let midiAccess = null, output = null, actx = null, master = null;
+const voices = new Map();
+function audio(){
+  if(!actx){
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+    actx = new AC(); master = actx.createGain(); master.gain.value = 0.3; master.connect(actx.destination);
+  }
+  if(actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function synthOn(m, v){
+  const ac = audio(); if(!ac) return; synthOff(m);
+  const f = 440 * Math.pow(2, (m - 69) / 12), now = ac.currentTime;
+  const g = ac.createGain(); g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(0.15 + 0.45 * v / 127, now + 0.008);
+  g.gain.setTargetAtTime(0.04, now + 0.01, 0.7);
+  const o1 = ac.createOscillator(); o1.type = 'triangle'; o1.frequency.value = f;
+  const o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2;
+  const g2 = ac.createGain(); g2.gain.value = 0.2;
+  o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(master); o1.start(now); o2.start(now);
+  voices.set(m, {g, o: [o1, o2]});
+}
+function synthOff(m){
+  const vc = voices.get(m); if(!vc || !actx) return; voices.delete(m);
+  const now = actx.currentTime; vc.g.gain.cancelScheduledValues(now); vc.g.gain.setTargetAtTime(0, now, 0.06);
+  vc.o.forEach(o => o.stop(now + 0.4));
+}
+function playOn(m, v){ if(output){ try{ output.send([0x90, m, v]); }catch(e){} } else synthOn(m, v); }
+function playOff(m){ if(output){ try{ output.send([0x80, m, 0]); }catch(e){} } else synthOff(m); }
+function allOff(){
+  for(const n of sounding) playOff(n.midi); sounding = [];
+  for(const m of [...voices.keys()]) synthOff(m);
+}
+
+/* ================= Connexion au piano ================= */
+let inputNames = [];
+async function initMidi(){
+  if(!navigator.requestMIDIAccess){ setStatus(false, 'MIDI indisponible ici'); return; }
+  try{
+    midiAccess = await navigator.requestMIDIAccess({sysex: false});
+    midiAccess.onstatechange = refreshPorts; refreshPorts();
+  }catch(e){ setStatus(false, 'Accès MIDI refusé'); }
+}
+function refreshPorts(){
+  const ins = [...midiAccess.inputs.values()].filter(x => x.state !== 'disconnected');
+  const outs = [...midiAccess.outputs.values()].filter(x => x.state !== 'disconnected');
+  ins.forEach(i => i.onmidimessage = onMidiMessage);
+  const pick = list => list.find(x => /roland|lx/i.test(x.name || '')) || list[0] || null;
+  output = pick(outs);
+  inputNames = ins.map(i => i.name || 'Appareil MIDI');
+  const main = pick(ins);
+  setStatus(!!main, main ? (main.name || 'Piano connecté') : 'Aucun piano détecté');
+}
+function setStatus(ok, txt){ $$('.statusBtn').forEach(b => b.classList.toggle('ok', ok)); $$('.statusTxt').forEach(s => s.textContent = txt); }
+function onMidiMessage(e){
+  const d = e.data; if(!d || d.length < 3) return;
+  const type = d[0] & 0xF0;
+  if(type === 0x90 && d[2] > 0) noteOnInput(d[1], d[2], 'piano');
+  else if(type === 0x80 || type === 0x90) noteOffInput(d[1], 'piano');
+}
+
+/* ================= État ================= */
+let imported = store.get('imported', []);
+let song = null, item = null, t = 0, playing = false, waiting = false, lastTs = 0, lastErr = null;
+let mode = store.get('mode', 'wait'), speed = store.get('speed', 80) / 100;
+let hands = {L: true, R: true};
+let opts = Object.assign({names: true, fingers: true, full88: false, octaves: false}, store.get('opts', {}));
+let active = [], groups = [], groupIdx = 0, missIdx = 0, autoIdx = 0, sounding = [];
+let stats = {hits: 0, misses: 0, errors: 0};
+const pressed = new Map();
+const LEAD = 2.5;   // secondes avant la première note
+const LOOK = 3;     // secondes visibles à l'écran
+const isActive = n => mode !== 'listen' && hands[n.hand];
+const label = m => opts.octaves ? NAMES[m % 12] + (Math.floor(m / 12) - 2) : NAMES[m % 12];
+const allItems = () => [...LESSONS, ...EXTRAS, ...imported.map(s => ({id: s.id, name: s.name, imported: true, make: n => parseMidi(fromB64(s.b64), n)}))];
+
+function rebuild(){
+  if(!song) return;
+  active = song.notes.filter(isActive);
+  groups = [];
+  for(const n of active){ const g = groups[groups.length - 1]; if(g && n.start - g[0].start < 0.04) g.push(n); else groups.push([n]); }
+  seekIndices();
+}
+function seekIndices(){
+  groupIdx = lowerBound(groups, t - 1e-6, g => g[0].start);
+  missIdx = lowerBound(active, t - 1e-6, n => n.start);
+  autoIdx = lowerBound(song.notes, t - 1e-6, n => n.start);
+}
+function resetNotes(from){ for(const n of song.notes) if(n.start >= from){ n.hit = false; n.missed = false; } }
+function restart(){
+  allOff(); waiting = false; lastErr = null; t = -LEAD * speed;
+  resetNotes(-Infinity); stats = {hits: 0, misses: 0, errors: 0}; rebuild();
+}
+function seek(frac){
+  if(!song || song.free) return; allOff();
+  t = Math.max(-LEAD * speed, frac * song.duration - 1.5 * speed);
+  resetNotes(t); stats = {hits: 0, misses: 0, errors: 0}; seekIndices();
+}
+function update(dt){
+  if(!playing || !song || song.free) return;
+  let nt = t + dt * speed; waiting = false;
+  if(mode === 'wait'){
+    while(groupIdx < groups.length && groups[groupIdx].every(n => n.hit)) groupIdx++;
+    const g = groups[groupIdx];
+    if(g && nt >= g[0].start){ nt = g[0].start; waiting = true; }
+  }
+  t = Math.max(t, nt);
+  if(mode === 'play'){
+    const win = 0.22 * speed;
+    while(missIdx < active.length && active[missIdx].start + win < t){
+      const n = active[missIdx++]; if(!n.hit){ n.missed = true; stats.misses++; }
+    }
+  }
+  const notes = song.notes;
+  while(autoIdx < notes.length && notes[autoIdx].start <= t){
+    const n = notes[autoIdx++]; if(!isActive(n)){ playOn(n.midi, 70); sounding.push(n); }
+  }
+  for(let i = sounding.length - 1; i >= 0; i--){ const n = sounding[i]; if(t >= n.start + n.dur){ playOff(n.midi); sounding.splice(i, 1); } }
+  if(t > song.duration + 0.6) finish();
+}
+function finish(){
+  playing = false; allOff(); updatePlayBtn();
+  if(mode !== 'listen') showResults(); else { restart(); }
+}
+function accuracy(){ const tot = stats.hits + stats.misses + stats.errors; return tot ? Math.round(100 * stats.hits / tot) : 0; }
+
+/* ================= Entrées : piano, écran tactile, clavier d'ordi ================= */
+function noteOnInput(m, vel, src){
+  if(src !== 'piano') playOn(m, vel);
+  let state = 'free';
+  if(playing && song && !song.free && mode !== 'listen' && t > -LEAD * speed + 0.4){
+    const win = 0.22 * speed, early = (mode === 'wait' ? 0.45 : 0.22) * speed;
+    let found = null;
+    for(let i = lowerBound(active, t - win, n => n.start); i < active.length && active[i].start <= t + early; i++){
+      const n = active[i]; if(!n.hit && !n.missed && n.midi === m){ found = n; break; }
+    }
+    if(found){ found.hit = true; stats.hits++; state = 'good'; lastErr = null; }
+    else { stats.errors++; state = 'bad'; lastErr = {m, at: performance.now()}; }
+  }
+  pressed.set(m, state);
+}
+function noteOffInput(m, src){ pressed.delete(m); if(src !== 'piano') playOff(m); }
+
+/* ================= Dessin ================= */
+const roll = $('#roll'), kb = $('#kb'), rctx = roll.getContext('2d'), kctx = kb.getContext('2d');
+const FONT = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+let W = 0, RH = 0, KH = 0, dpr = 1, keys = {}, geo = {lo: 21, hi: 108, klo: 21, khi: 108};
+function resize(){
+  if($('#player').classList.contains('hidden')) return;
+  dpr = window.devicePixelRatio || 1;
+  const st = $('#stage').getBoundingClientRect(); W = st.width; RH = st.height; KH = kb.getBoundingClientRect().height;
+  roll.width = Math.round(W * dpr); roll.height = Math.round(RH * dpr);
+  kb.width = Math.round(W * dpr); kb.height = Math.round(KH * dpr);
+  layoutKeys();
+}
+function computeRange(){
+  if(opts.full88 || !song) { geo.lo = 21; geo.hi = 108; }
+  else {
+    let lo = song.lo - 3, hi = song.hi + 3;
+    if(hi - lo < 24){ const c = (lo + hi) / 2; lo = Math.round(c - 12); hi = Math.round(c + 12); }
+    geo.lo = Math.max(21, lo); geo.hi = Math.min(108, hi);
+  }
+  layoutKeys();
+}
+function layoutKeys(){
+  let lo = geo.lo, hi = geo.hi; if(isBlack(lo)) lo--; if(isBlack(hi)) hi++;
+  let n = 0; for(let m = lo; m <= hi; m++) if(!isBlack(m)) n++;
+  const ww = W / n, bw = ww * 0.6; keys = {}; let wi = 0;
+  for(let m = lo; m <= hi; m++){
+    if(isBlack(m)) keys[m] = {x: wi * ww - bw / 2, w: bw, black: true};
+    else { keys[m] = {x: wi * ww, w: ww, black: false}; wi++; }
+  }
+  geo.klo = lo; geo.khi = hi;
+}
+function rrect(c, x, y, w, h, r){
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function badge(c, cx, cy, r, txt){
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(cx, cy, r, 0, 6.2832); c.fill();
+  c.fillStyle = '#12141a'; c.font = '700 ' + Math.round(r * 1.35) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(txt, cx, cy + r * 0.06);
+}
+function drawRoll(){
+  const c = rctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, RH);
+  for(let m = geo.klo; m <= geo.khi; m++){
+    const k = keys[m];
+    if(k.black){ c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(k.x, 0, k.w, RH); }
+    else if(m % 12 === 0){ c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(k.x, 0, 1, RH); }
+    else if(m % 12 === 5){ c.fillStyle = 'rgba(255,255,255,.04)'; c.fillRect(k.x, 0, 1, RH); }
+  }
+  if(!song || song.free) return;
+  const pps = RH / (LOOK * speed), notes = song.notes;
+  for(let i = lowerBound(notes, t - song.maxDur - 0.1, n => n.start); i < notes.length; i++){
+    const n = notes[i]; if(n.start > t + LOOK * speed + 0.1) break;
+    const k = keys[n.midi]; if(!k) continue;
+    const yb = RH - (n.start - t) * pps, h = Math.max(6, n.dur * pps), yt = yb - h;
+    if(yb < 0 || yt > RH) continue;
+    const act = isActive(n) || mode === 'listen';
+    const x = k.x + 1.5, w = k.w - 3, cx = x + w / 2;
+    c.globalAlpha = act ? 1 : 0.28;
+    c.fillStyle = n.missed ? C.bad : (n.hand === 'R' ? C.right : C.left);
+    rrect(c, x, yt, w, h, Math.min(7, w / 3)); c.fill();
+    if(n.hit){ c.globalAlpha = 0.5; c.fillStyle = '#fff'; c.fill(); }
+    c.globalAlpha = act ? 1 : 0.45;
+    let top = yb - 4;
+    if(opts.fingers && n.finger && w >= 16){
+      const r = Math.min(11, w * 0.34);
+      if(h >= 2 * r + 6){ badge(c, cx, yb - r - 4, r, n.finger); top = yb - 2 * r - 7; }
+    }
+    if(opts.names && w >= 12 && top - yt >= 13){
+      c.fillStyle = '#0b0d12'; c.textAlign = 'center'; c.textBaseline = 'bottom';
+      c.font = '700 ' + Math.round(Math.max(8, Math.min(14, w * 0.4))) + 'px ' + FONT;
+      c.fillText(noteName(n.midi), cx, top);
+    }
+  }
+  c.globalAlpha = 1; c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(0, RH - 2, W, 2);
+}
+function expectedKeys(){
+  const map = new Map(); if(!song || song.free) return map;
+  const notes = song.notes;
+  for(let i = lowerBound(notes, t - song.maxDur - 0.05, n => n.start); i < notes.length && notes[i].start <= t + 1e-6; i++){
+    const n = notes[i];
+    if(t < n.start + n.dur && !(mode === 'wait' && n.hit && isActive(n) === false))
+      map.set(n.midi, {hand: (isActive(n) || mode === 'listen') ? n.hand : 'auto', finger: n.finger});
+  }
+  // Pendant le décompte ou l'attente : montrer où poser les doigts
+  if(mode !== 'listen' && (waiting || t < 0)){
+    const g = groups[groupIdx];
+    if(g) for(const n of g) if(!n.hit) map.set(n.midi, {hand: n.hand, finger: n.finger, target: true});
+  }
+  return map;
+}
+function drawKb(){
+  const c = kctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, KH);
+  const exp = expectedKeys(), bh = KH * 0.62, pulse = 0.75 + 0.25 * Math.sin(performance.now() / 180);
+  const paint = (m, base) => {
+    const st = pressed.get(m); if(st) return C[st];
+    const e = exp.get(m); if(!e) return base;
+    return e.hand === 'R' ? C.right : e.hand === 'L' ? C.left : C.auto;
+  };
+  for(const black of [false, true]){
+    for(let m = geo.klo; m <= geo.khi; m++){
+      const k = keys[m]; if(k.black !== black) continue;
+      const e = exp.get(m), st = pressed.get(m);
+      if(!black){
+        c.fillStyle = '#f3f4f7'; rrect(c, k.x + 0.5, 0, k.w - 1, KH - 1, 6); c.fill();
+        if(st || e){ c.globalAlpha = (!st && e.target) ? pulse : 1; c.fillStyle = paint(m); c.fill(); c.globalAlpha = 1; }
+        c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = 1; c.stroke();
+        const isC = m % 12 === 0;
+        if(isC || (opts.names && k.w >= 24)){
+          c.fillStyle = (st || e) ? '#0b0d12' : (isC ? '#3d4352' : '#a2a8b5');
+          c.font = (isC ? '700 ' : '500 ') + Math.round(Math.max(8, Math.min(13, k.w * 0.36))) + 'px ' + FONT;
+          c.textAlign = 'center'; c.textBaseline = 'bottom';
+          c.fillText(isC ? label(m) : noteName(m), k.x + k.w / 2, KH - 7);
+          if(m === 60){ c.fillStyle = (st || e) ? '#0b0d12' : '#6b8cff'; c.beginPath(); c.arc(k.x + k.w / 2, KH - 4, 2.2, 0, 6.2832); c.fill(); }
+        }
+        if(opts.fingers && e && e.finger && !st && k.w >= 18){ const r = Math.min(13, k.w * 0.3); badge(c, k.x + k.w / 2, KH - 30 - r, r, e.finger); }
+      } else {
+        c.fillStyle = '#1b1d24'; rrect(c, k.x, -4, k.w, bh + 4, 4); c.fill();
+        if(st || e){ c.globalAlpha = (!st && e.target) ? pulse : 1; c.fillStyle = paint(m); c.fill(); c.globalAlpha = 1; }
+        if(opts.fingers && e && e.finger && !st && k.w >= 14){ const r = Math.min(10, k.w * 0.4); badge(c, k.x + k.w / 2, bh - r - 6, r, e.finger); }
+      }
+    }
+  }
+  const grd = c.createLinearGradient(0, 0, 0, 10); grd.addColorStop(0, 'rgba(0,0,0,.5)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = grd; c.fillRect(0, 0, W, 10);
+}
+const hud = {};
+function setHTML(sel, v){ if(hud[sel] !== v){ hud[sel] = v; $(sel).innerHTML = v; } }
+function updateHUD(){
+  if(!song) return;
+  const hintEl = $('#hint');
+  if(song.free){
+    const ks = [...pressed.keys()].sort((a, b) => a - b);
+    hintEl.classList.toggle('big', ks.length > 0);
+    setHTML('#hint', ks.length ? ks.map(label).join(' · ') : 'Joue une touche pour voir son nom');
+    return;
+  }
+  hintEl.classList.remove('big');
+  $('#progFill').style.width = Math.max(0, Math.min(100, 100 * t / song.duration)) + '%';
+  let hint = '';
+  const g = groups[groupIdx];
+  const want = g ? g.filter(n => !n.hit) : [];
+  const wantTxt = () => want.map(n => `<span class="${n.hand === 'R' ? 'cR' : 'cL'}">${label(n.midi)}</span>` + (opts.fingers && n.finger ? `<span class="f">${n.finger}</span>` : '')).join(' + ');
+  if(mode === 'listen') hint = playing ? '' : 'Appuie sur ▶ pour écouter';
+  else if(playing && t < 0 && want.length) hint = 'Prépare-toi : ' + wantTxt();
+  else if(waiting && want.length){
+    if(lastErr && performance.now() - lastErr.at < 2200){
+      const target = want.reduce((a, n) => Math.abs(n.midi - lastErr.m) < Math.abs(a.midi - lastErr.m) ? n : a, want[0]);
+      hint = `<span class="err">Ça, c'est ${noteName(lastErr.m)}.</span> Le ${noteName(target.midi)} est plus à ${lastErr.m < target.midi ? 'droite →' : '← gauche'}`;
+    } else hint = 'Joue : ' + wantTxt();
+  }
+  else if(!playing && t <= -LEAD * speed + 0.01) hint = 'Appuie sur ▶ pour commencer';
+  else if(!playing) hint = 'Pause';
+  setHTML('#hint', hint);
+  setHTML('#stats', mode === 'listen' ? '' : `✔ <b>${stats.hits}</b> &nbsp;✖ <b>${stats.misses + stats.errors}</b> &nbsp;<b>${accuracy()}%</b>`);
+}
+function frame(ts){
+  const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0; lastTs = ts;
+  if(!$('#player').classList.contains('hidden')){ update(dt); drawRoll(); drawKb(); updateHUD(); }
+  requestAnimationFrame(frame);
+}
+
+/* ================= Fenêtres ================= */
+let modalActions = {};
+function modal(html, actions){ modalActions = actions || {}; $('#card').innerHTML = html; $('#modal').classList.remove('hidden'); }
+function closeModal(){ $('#modal').classList.add('hidden'); }
+$('#modal').addEventListener('click', e => {
+  if(e.target.id === 'modal'){ closeModal(); return; }
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  const a = b.dataset.act;
+  if(a === 'close') closeModal(); else if(modalActions[a]) modalActions[a](b);
+});
+function showIntro(){
+  if(!item || !item.intro) return;
+  const idx = LESSONS.indexOf(item);
+  modal(`<p class="muted">Leçon ${idx + 1} sur ${LESSONS.length}</p><h2>${esc(item.name)}</h2>${item.intro}
+    <div class="row"><button data-act="listen">🔊 Écouter d'abord</button><button class="primary" data-act="go">C'est parti</button></div>`, {
+    go(){ closeModal(); setMode('wait'); restart(); if(!playing) togglePlay(); },
+    listen(){ closeModal(); setMode('listen'); restart(); if(!playing) togglePlay(); }
+  });
+}
+function showResults(){
+  const pct = accuracy(), best = store.get('best', {});
+  const isBest = pct > (best[item.id] || 0);
+  if(isBest){ best[item.id] = pct; store.set('best', best); }
+  const idx = LESSONS.indexOf(item), next = idx >= 0 ? LESSONS[idx + 1] : null, st = starsOf(pct);
+  const msg = pct >= 95 ? 'Parfait, c\'est dans les doigts !' : pct >= 80 ? 'Très bien ! Tu peux passer à la suite.' : pct >= 60 ? 'Pas mal. Refais-le une fois pour bien l\'ancrer.' : 'Normal au début : recommence tranquillement en mode Attente.';
+  const tip = mode === 'wait' && pct >= 80 ? '<div class="tip">Défi : refais-le en mode <b>Tempo réel</b>, le morceau n\'attend plus.</div>' : '';
+  modal(`<p class="muted">${esc(song.name)}</p><div class="starsBig">${starStr(st)}</div><div class="big">${pct}%</div>
+    <p>${msg}${isBest && pct > 0 ? ' <b>Nouveau record !</b>' : ''}</p>${tip}
+    <p class="muted">Notes justes : ${stats.hits} · Notes ratées : ${stats.misses} · Fausses notes : ${stats.errors} · Vitesse : ${Math.round(speed * 100)} %</p>
+    <div class="row"><button data-act="home">Accueil</button><button data-act="replay"${next && pct >= 80 ? '' : ' class="primary"'}>Rejouer</button>${next ? `<button data-act="next"${pct >= 80 ? ' class="primary"' : ''}>Leçon suivante →</button>` : ''}</div>`, {
+    home(){ closeModal(); goHome(); },
+    replay(){ closeModal(); restart(); togglePlay(); },
+    next(){ closeModal(); openItem(next.id); }
+  });
+}
+function showConnection(){
+  const list = inputNames.length ? '<ul>' + inputNames.map(n => `<li><b>${esc(n)}</b> : connecté</li>`).join('') + '</ul>' : '<p><b>Aucun piano détecté pour l\'instant.</b></p>';
+  modal(`<h2>Connexion au piano</h2>${list}
+    <ol>
+      <li>Ferme complètement l'appli Roland (sinon elle garde le piano pour elle).</li>
+      <li>Vérifie que le Bluetooth du piano est activé.</li>
+      <li>Dans MIDIWeb Browser, connecte le piano depuis son menu Bluetooth MIDI (pas depuis les Réglages de l'iPad).</li>
+      <li>Accepte l'accès MIDI si la page le demande, puis touche « Recharger ».</li>
+    </ol>
+    <p class="muted">Plan B : un câble USB entre la prise « USB Computer » du piano et l'iPad.<br>Sans piano, l'appli marche aussi au doigt sur le clavier à l'écran.</p>
+    <div class="row"><button data-act="close">Fermer</button><button class="primary" data-act="reload">Recharger</button></div>`, {reload(){ location.reload(); }});
+}
+function showSettings(){
+  const row = (k, t, d) => `<div class="opt"><div>${t}<small>${d}</small></div><button class="tog ${opts[k] ? 'on' : ''}" data-act="tog" data-k="${k}">${opts[k] ? 'Activé' : 'Désactivé'}</button></div>`;
+  modal(`<h2>Réglages</h2>
+    ${row('names', 'Noms des notes', 'Do, Ré, Mi… sur les notes et les touches')}
+    ${row('fingers', 'Doigtés', 'Le numéro du doigt à utiliser (1 = pouce)')}
+    ${row('full88', 'Clavier entier', 'Affiche les 88 touches au lieu de la zone utile')}
+    ${row('octaves', 'Numéros d\'octave', 'Do3 au lieu de Do (Do3 = Do central)')}
+    <p class="muted" style="margin-top:14px"><b>Attente</b> : le morceau attend que tu joues la bonne touche. Idéal pour apprendre.<br>
+    <b>Tempo réel</b> : le morceau avance tout seul, à toi de suivre.<br>
+    <b>Écoute</b> : le piano joue le morceau pour que tu l'entendes.<br>
+    <b>MG / MD</b> : active ou coupe la main gauche / droite. La main coupée est jouée automatiquement.</p>
+    <div class="row"><button class="primary" data-act="close">OK</button></div>`, {
+    tog(b){ const k = b.dataset.k; opts[k] = !opts[k]; store.set('opts', opts); computeRange(); showSettings(); }
+  });
+}
+
+/* ================= Accueil ================= */
+function renderHome(){
+  const best = store.get('best', {});
+  const firstTodo = LESSONS.find(l => (best[l.id] || 0) < 80);
+  $('#lessons').innerHTML = LESSONS.map((l, i) => {
+    const b = best[l.id] || 0, done = b >= 80;
+    return `<button class="item ${done ? 'done' : ''} ${l === firstTodo ? 'next' : ''}" data-id="${l.id}"><span class="num">${done ? '✓' : i + 1}</span><span><b>${esc(l.name)}</b><span class="d">${esc(l.desc)}</span>${b ? `<span class="stars">${starStr(starsOf(b))} ${b}%</span>` : ''}</span></button>`;
+  }).join('');
+  const nDone = LESSONS.filter(l => (best[l.id] || 0) >= 80).length;
+  $('#pathBar').style.width = (100 * nDone / LESSONS.length) + '%';
+  $('#pathTxt').textContent = nDone + '/' + LESSONS.length;
+  $('#extras').innerHTML = EXTRAS.map(l => `<button class="item" data-id="${l.id}"><span class="num">${l.free ? '🎹' : '♪'}</span><span><b>${esc(l.name)}</b><span class="d">${esc(l.desc)}</span>${best[l.id] ? `<span class="stars">${starStr(starsOf(best[l.id]))} ${best[l.id]}%</span>` : ''}</span></button>`).join('');
+  $('#mine').innerHTML = imported.map(s => `<button class="item" data-id="${s.id}"><span class="num">♪</span><span><b>${esc(s.name)}</b>${best[s.id] ? `<span class="stars">${starStr(starsOf(best[s.id]))} ${best[s.id]}%</span>` : '<span class="d">Fichier importé</span>'}</span><span class="del" data-del="${s.id}">✕</span></button>`).join('')
+    + `<button class="item" id="importBtn"><span class="num">＋</span><span><b>Importer un fichier MIDI</b><span class="d">N'importe quel morceau au format .mid</span></span></button>`;
+}
+$('#home').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if(del){ imported = imported.filter(s => s.id !== del.dataset.del); store.set('imported', imported); renderHome(); return; }
+  if(e.target.closest('#importBtn')){ $('#fileIn').click(); return; }
+  const it = e.target.closest('[data-id]'); if(it){ audio(); openItem(it.dataset.id); }
+});
+$('#fileIn').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try{
+    const buf = await f.arrayBuffer(), name = f.name.replace(/\.(mid|midi|kar)$/i, '');
+    parseMidi(buf, name);
+    const id = 'imp_' + Date.now();
+    imported.push({id, name, b64: toB64(buf)});
+    while(imported.length > 30) imported.shift();
+    store.set('imported', imported); renderHome(); openItem(id);
+  }catch(err){ modal(`<h2>Fichier illisible</h2><p>${esc(err.message || err)}</p><div class="row"><button class="primary" data-act="close">OK</button></div>`); }
+});
+function openItem(id){
+  const it = allItems().find(x => x.id === id); if(!it) return;
+  let s;
+  try{ s = it.free ? {name: it.name, notes: [], free: true, lo: 48, hi: 84, maxDur: 0, duration: 0} : it.make(it.name); }
+  catch(e){ modal(`<h2>Oups</h2><p>${esc(e.message)}</p><div class="row"><button class="primary" data-act="close">OK</button></div>`); return; }
+  item = it; song = s; playing = false; hands = {L: true, R: true};
+  if(it.intro) mode = 'wait';
+  $('#title').textContent = s.name;
+  $('#player').classList.toggle('free', !!s.free);
+  $('#infoBtn').classList.toggle('hidden', !it.intro);
+  $('#home').classList.add('hidden'); $('#player').classList.remove('hidden');
+  hud['#hint'] = hud['#stats'] = null;
+  resize(); computeRange(); restart(); refreshControls(); updatePlayBtn();
+  if(it.intro) showIntro();
+}
+function goHome(){
+  playing = false; allOff(); pressed.clear();
+  $('#player').classList.add('hidden'); $('#home').classList.remove('hidden'); renderHome();
+}
+
+/* ================= Commandes du lecteur ================= */
+function updatePlayBtn(){ $('#playBtn').textContent = playing ? '⏸' : '▶'; }
+let wakeLock = null;
+async function keepAwake(){ try{ if(navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } }catch(e){} }
+function togglePlay(){
+  if(!song || song.free) return;
+  if(!playing){ if(t >= song.duration) restart(); playing = true; audio(); keepAwake(); }
+  else { playing = false; allOff(); }
+  updatePlayBtn();
+}
+function setMode(m){ mode = m; store.set('mode', m); allOff(); rebuild(); refreshControls(); }
+function refreshControls(){
+  $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const hasL = song && song.notes.some(n => n.hand === 'L'), hasR = song && song.notes.some(n => n.hand === 'R');
+  for(const [h, has] of [['L', hasL], ['R', hasR]]){
+    const b = $('#hand' + h); b.classList.toggle('on', hands[h] && has);
+    b.disabled = mode === 'listen' || !has; b.style.opacity = b.disabled ? 0.35 : 1;
+  }
+  $('#speed').value = Math.round(speed * 100); $('#speedVal').textContent = Math.round(speed * 100) + '%';
+}
+$('#modeSeg').addEventListener('click', e => { const m = e.target.dataset.mode; if(m) setMode(m); });
+['L', 'R'].forEach(h => $('#hand' + h).addEventListener('click', () => { hands[h] = !hands[h]; allOff(); rebuild(); refreshControls(); }));
+$('#speed').addEventListener('input', e => { speed = e.target.value / 100; store.set('speed', +e.target.value); refreshControls(); });
+$('#playBtn').addEventListener('click', togglePlay);
+$('#restartBtn').addEventListener('click', () => { playing = false; updatePlayBtn(); restart(); });
+$('#backBtn').addEventListener('click', goHome);
+$('#infoBtn').addEventListener('click', () => { if(playing) togglePlay(); showIntro(); });
+$('#setBtn').addEventListener('click', showSettings);
+$$('.statusBtn').forEach(b => b.addEventListener('click', showConnection));
+$('#progress').addEventListener('pointerdown', e => { const r = e.currentTarget.getBoundingClientRect(); seek((e.clientX - r.left) / r.width); });
+
+// Clavier tactile
+const touches = new Map();
+function keyAt(x, y){
+  if(y < KH * 0.62) for(let m = geo.klo; m <= geo.khi; m++){ const k = keys[m]; if(k.black && x >= k.x && x <= k.x + k.w) return m; }
+  for(let m = geo.klo; m <= geo.khi; m++){ const k = keys[m]; if(!k.black && x >= k.x && x < k.x + k.w) return m; }
+  return null;
+}
+const kbPos = e => { const r = kb.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+kb.addEventListener('pointerdown', e => {
+  e.preventDefault(); audio(); try{ kb.setPointerCapture(e.pointerId); }catch(_){}
+  const m = keyAt(...kbPos(e)); if(m != null){ touches.set(e.pointerId, m); noteOnInput(m, 90, 'touch'); }
+});
+kb.addEventListener('pointermove', e => {
+  if(!touches.has(e.pointerId)) return;
+  const m = keyAt(...kbPos(e)), old = touches.get(e.pointerId);
+  if(m != null && m !== old){ noteOffInput(old, 'touch'); touches.set(e.pointerId, m); noteOnInput(m, 90, 'touch'); }
+});
+const endTouch = e => { const m = touches.get(e.pointerId); if(m != null){ noteOffInput(m, 'touch'); touches.delete(e.pointerId); } };
+kb.addEventListener('pointerup', endTouch); kb.addEventListener('pointercancel', endTouch);
+
+// Clavier d'ordinateur (touches physiques : rangée Q S D F G H J K en AZERTY = Do Ré Mi Fa Sol La Si Do)
+const KEYMAP = {KeyA:0,KeyW:1,KeyS:2,KeyE:3,KeyD:4,KeyF:5,KeyT:6,KeyG:7,KeyY:8,KeyH:9,KeyU:10,KeyJ:11,KeyK:12,KeyO:13,KeyL:14};
+const kbdHeld = new Set();
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT' || $('#player').classList.contains('hidden')) return;
+  if(e.code === 'Space'){ e.preventDefault(); if(!e.repeat && $('#modal').classList.contains('hidden')) togglePlay(); return; }
+  if(e.code in KEYMAP && !e.repeat && !e.metaKey && !e.ctrlKey){ audio(); const m = 60 + KEYMAP[e.code]; kbdHeld.add(m); noteOnInput(m, 90, 'kbd'); }
+});
+window.addEventListener('keyup', e => { if(e.code in KEYMAP){ const m = 60 + KEYMAP[e.code]; if(kbdHeld.delete(m)) noteOffInput(m, 'kbd'); } });
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 300));
+document.addEventListener('visibilitychange', () => { if(document.hidden && playing) togglePlay(); });
+
+// Accès pour les tests automatiques
+window.__pc = {noteOn: m => noteOnInput(m, 90, 'piano'), noteOff: m => noteOffInput(m, 'piano'), parseMidi, state: () => ({t, playing, waiting, mode, stats, want: (groups[groupIdx] || []).filter(n => !n.hit).map(n => n.midi), dur: song && song.duration})};
+
+renderHome(); initMidi(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
